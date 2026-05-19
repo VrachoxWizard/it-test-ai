@@ -1,19 +1,19 @@
 /**
- * Local dev server for TARTARUS UPLINK.
- * Reads OPENROUTER_API_KEY from .env and exposes it to the app via GET /api/config (localhost only).
- * The key is still used client-side for OpenRouter fetch — same as manual paste; .env avoids committing secrets.
+ * TARTARUS UPLINK dev server — serves public/, proxies OpenRouter (key stays server-side).
  */
 import { createServer } from 'http';
 import { readFileSync, existsSync } from 'fs';
 import { join, extname, normalize } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const PUBLIC = join(ROOT, 'public');
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = '127.0.0.1';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function loadDotEnv() {
-  const envPath = join(__dirname, '.env');
+  const envPath = join(ROOT, '.env');
   if (!existsSync(envPath)) return;
   const text = readFileSync(envPath, 'utf8');
   for (const line of text.split(/\r?\n/)) {
@@ -45,6 +45,15 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
 function serveFile(res, filePath) {
   if (!existsSync(filePath)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -57,22 +66,77 @@ function serveFile(res, filePath) {
   res.end(body);
 }
 
-const server = createServer((req, res) => {
+async function proxyChat(req, res) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: { message: 'OPENROUTER_API_KEY not set in .env' } }));
+    return;
+  }
+
+  let raw;
+  try {
+    raw = await readBody(req);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: { message: 'Invalid body' } }));
+    return;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: { message: 'JSON required' } }));
+    return;
+  }
+
+  try {
+    const upstream = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost',
+        'X-Title': 'Tartarus Uplink',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await upstream.text();
+    res.writeHead(upstream.status, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    });
+    res.end(text);
+  } catch (err) {
+    res.writeHead(502, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: { message: err.message || 'Upstream failed' } }));
+  }
+}
+
+const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${HOST}`);
 
   if (req.method === 'GET' && url.pathname === '/api/config') {
-    const key = process.env.OPENROUTER_API_KEY || '';
+    const hasKey = Boolean(process.env.OPENROUTER_API_KEY);
     res.writeHead(200, {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
     });
-    res.end(JSON.stringify({ openRouterApiKey: key }));
+    res.end(JSON.stringify({ hasKey }));
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/chat') {
+    await proxyChat(req, res);
     return;
   }
 
   let rel = url.pathname === '/' ? '/index.html' : url.pathname;
-  const safe = normalize(join(__dirname, rel));
-  if (!safe.startsWith(__dirname)) {
+  const safe = normalize(join(PUBLIC, rel));
+  if (!safe.startsWith(PUBLIC)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
@@ -83,6 +147,6 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
   const hasKey = Boolean(process.env.OPENROUTER_API_KEY);
-  console.log(`TARTARUS UPLINK dev server → http://${HOST}:${PORT}`);
-  console.log(hasKey ? 'OPENROUTER_API_KEY loaded from .env' : 'No .env key — copy .env.example to .env');
+  console.log(`TARTARUS UPLINK → http://${HOST}:${PORT}`);
+  console.log(hasKey ? 'OPENROUTER_API_KEY loaded from .env (proxy active)' : 'No .env key — copy .env.example to .env');
 });

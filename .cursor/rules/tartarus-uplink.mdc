@@ -1,18 +1,16 @@
 ---
-description: TARTARUS UPLINK single-file cyberpunk helpdesk app conventions
-globs: index.html
+description: TARTARUS UPLINK learning simulator conventions
+globs: public/**/*
 alwaysApply: true
 ---
 
-# TARTARUS UPLINK
+# TARTARUS UPLINK v3
 
-Read `AGENTS.md` and `VIBECODING.md` before editing.
+Read `AGENTS.md`, `VIBECODING.md`, and `LEARNING.md` before editing.
 
-- Single file `index.html` — HTML + embedded CSS + Vanilla JS only. No React/Vite/npm unless user requests.
-- Tailwind via CDN; fonts JetBrains Mono / Fira Code. Palette: `#050505`, `#00ff41`, `#ffb000`, `#ff003c`.
-- Do NOT modify `SYSTEM_PROMPT` unless user explicitly asks.
-- Terminal does not run real OS commands; input goes to OpenRouter via `callOpenRouter`.
-- OpenRouter headers: `Authorization`, `Content-Type`, `HTTP-Referer: http://localhost`, `X-Title: Tartarus Uplink`.
-- Never commit API keys; use `localStorage` keys `tartarus_api_key`, `tartarus_model`.
-- Keep immersion: bracket headers, CRT scanlines, cynical SYSTEM errors, `operator@tartarus:~$` prompt.
-- Minimize diff scope; reuse `app`, `els`, `appendChat`, `appendTerminalLine`, `sendToAI`.
+- App lives in `public/` — ES modules under `public/js/`, styles in `public/css/`.
+- Run via `npm run dev` — OpenRouter proxied at `POST /api/chat`; key in `.env` only.
+- Keep `DISPATCH_CORE` in `public/js/prompts.js` exact; curriculum layer is `DISPATCH_WINDOWS_CURRICULUM`.
+- Chill UX: no timers, HINT/STUCK without penalty, debrief → field notes.
+- Windows/help desk focus; no real shell execution.
+- ADHD-friendly: FOCUS mode, NOW DOING strip, calm labels toggle.

@@ -22,7 +22,7 @@ Open **http://127.0.0.1:3000**. Or use `npx serve .` and paste your key manually
 
 | Change type | File |
 |-------------|------|
-| App behavior / UI | `index.html` |
+| App behavior / UI | `public/index.html`, `public/js/*`, `public/css/*` |
 | Agent behavior docs | `AGENTS.md` |
 | Visual/tone rules | `VIBECODING.md` |
 | Technical design | `ARCHITECTURE.md` |

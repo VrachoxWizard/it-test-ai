@@ -1,50 +1,41 @@
 # Project: TARTARUS UPLINK
 
-> A grimy cyberpunk IT helpdesk simulator — one HTML file, zero build step, AI-powered tickets via OpenRouter.
+> Cyberpunk Windows help desk learning simulator — practice AD, PowerShell, and L1 triage in a fake terminal with AI Dispatch. Built for **short, chill study sessions** (ADHD/anxiety friendly: no timers, hints without penalty).
 
-You are a remote operator for **Tartarus Global**. Dispatch AI drops shady sysadmin tickets. You “fix” them by typing real-looking terminal commands in a fake shell. The AI judges your answers, teaches you when you’re wrong, and escalates the dystopia when you’re right.
+You are a remote operator for **Tartarus Global**. Dispatch drops tickets; you type troubleshooting commands; the AI teaches you and saves **Field Notes** flashcards when you close a ticket.
 
-![stack](https://img.shields.io/badge/stack-HTML%20%2B%20CSS%20%2B%20Vanilla%20JS-00ff41?style=flat-square)
-![build](https://img.shields.io/badge/build-none-050505?style=flat-square)
+![stack](https://img.shields.io/badge/stack-Vanilla%20ES%20modules-00ff41?style=flat-square)
 ![ai](https://img.shields.io/badge/AI-OpenRouter-ffb000?style=flat-square)
 
 ---
 
 ## Quick start
 
-1. **Get an API key** from [OpenRouter](https://openrouter.ai/keys).
-2. **Set environment variable** (recommended for local dev):
+```bash
+cp .env.example .env
+# Edit .env — set OPENROUTER_API_KEY=sk-or-v1-...
+npm run dev
+```
 
-   ```bash
-   cp .env.example .env
-   # Edit .env and set OPENROUTER_API_KEY=sk-or-v1-...
-   npm run dev
-   ```
+Open **http://127.0.0.1:3000** → pick **Shift type** → **CONNECT** → troubleshoot in the terminal.
 
-   Opens **http://127.0.0.1:3000** — the key loads from `.env` into the uplink field automatically.
-
-3. Or serve without `.env` and paste the key manually:
-
-   ```bash
-   npx serve .
-   ```
-
-4. Pick a model, click **CONNECT**, then troubleshoot in the center terminal (**Enter**).
+See [LEARNING.md](./LEARNING.md) for the 15-minute study loop.
 
 ---
 
-## Features
+## Features (v3)
 
-| Panel | Role |
-|-------|------|
-| **Left** | Fake operator vitals (Caffeine, Sanity, Uplink) + active ticket queue |
-| **Center** | Interactive terminal (`operator@tartarus:~$`) — history only, no real OS |
-| **Right** | OpenRouter config + Dispatch AI chat log |
+| Area | What you get |
+|------|----------------|
+| **Learning** | Windows/AD-focused curriculum tracks, `---DEBRIEF---` flashcards, HINT / STUCK buttons |
+| **Left panel** | Progress (tickets closed, skills), ticket queue, **NOW DOING**, field notes |
+| **Center** | Terminal + local `help` / `clear` / `history` + autocomplete |
+| **Right** | Model picker, Dispatch chat (API key stays on server) |
+| **Header** | FOCUS mode, REF cheat sheet, CALM stat labels |
 
-- CRT scanlines, phosphor glow, screen glitch on new tickets
-- Conversation memory for multi-turn troubleshooting
-- API key + model persisted in `localStorage`
-- Models: `meta-llama/llama-3-8b-instruct:free` (default), `openai/gpt-4o-mini`
+- API proxied via `POST /api/chat` — key never sent to the browser
+- Progress in `localStorage` (`tartarus_progress_v1`)
+- `npm test` — parser unit tests
 
 ---
 
@@ -52,63 +43,50 @@ You are a remote operator for **Tartarus Global**. Dispatch AI drops shady sysad
 
 ```
 it-test-ai/
-├── index.html      # Entire app (markup + CSS + JS)
-├── server.mjs      # Dev server — loads .env, serves /api/config
-├── .env.example    # Copy to .env (gitignored)
-├── package.json    # npm run dev
-├── README.md       # You are here
-├── AGENTS.md       # Instructions for AI coding agents
-├── ARCHITECTURE.md # Technical map for contributors
-├── VIBECODING.md   # Aesthetic & tone guide for extensions
-└── CONTRIBUTING.md # How to change things safely
+├── public/
+│   ├── index.html
+│   ├── css/tartarus.css
+│   ├── js/          # ES modules (app, ui, openrouter, prompts, …)
+│   └── data/curriculum-windows.json
+├── server.mjs       # Static host + OpenRouter proxy
+├── tests/
+├── LEARNING.md      # How to study with this app
+├── .env.example
+└── package.json
 ```
-
-There is **no** bundler or frontend framework — only a tiny `package.json` for `npm run dev` (local server + `.env`).
 
 ---
 
 ## Configuration
 
-| Setting | Where | Notes |
-|---------|--------|--------|
-| OpenRouter API key | `.env` → `OPENROUTER_API_KEY` | Dev: `npm run dev` reads via `/api/config`; **never commit `.env`** |
-| OpenRouter API key (saved) | `localStorage` → `tartarus_api_key` | Set when you click CONNECT |
-| Model | `localStorage` → `tartarus_model` | Set on Connect + dropdown change |
-
-### OpenRouter request shape
-
-- **Endpoint:** `POST https://openrouter.ai/api/v1/chat/completions`
-- **Headers:** `Authorization`, `Content-Type`, `HTTP-Referer: http://localhost`, `X-Title: Tartarus Uplink`
-- **System prompt:** Immutable string in `index.html` — do not alter without product intent (see `AGENTS.md`).
+| Setting | Where |
+|---------|--------|
+| API key | `.env` → `OPENROUTER_API_KEY` (server only) |
+| Model | UI dropdown → `localStorage` `tartarus_model` |
+| Progress | `localStorage` `tartarus_progress_v1` |
 
 ---
 
-## Development
+## Scripts
 
-- Edit **`index.html` only** unless you are explicitly splitting files (out of scope for v1).
-- Test with a real OpenRouter key and both models.
-- Use `npx serve .` — do not rely on double-clicking `index.html` for API calls.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) and [VIBECODING.md](./VIBECODING.md) before large UI or lore changes.
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Dev server on port 3000 |
+| `npm test` | Run parser tests |
 
 ---
 
-## Docs for AI / vibecoding
+## Docs
 
 | File | Purpose |
 |------|---------|
-| [AGENTS.md](./AGENTS.md) | Rules for Cursor, Copilot, Claude, etc. |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | State, flows, DOM IDs, extension points |
-| [VIBECODING.md](./VIBECODING.md) | Visual language, copy tone, “do / don’t” |
+| [LEARNING.md](./LEARNING.md) | Study guide for you |
+| [AGENTS.md](./AGENTS.md) | AI coding rules |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical map |
+| [VIBECODING.md](./VIBECODING.md) | Visual / tone guide |
 
 ---
 
 ## License
 
-MIT — use, fork, and corrupt helpdesks responsibly.
-
----
-
-## Credits
-
-Built as a single-file immersive web toy. Aesthetic: Mr. Robot × Matrix × midnight apartment sysadmin.
+MIT

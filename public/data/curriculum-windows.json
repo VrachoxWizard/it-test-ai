@@ -1,0 +1,118 @@
+{
+  "tracks": [
+    {
+      "id": "ad_basics",
+      "title": "AD Basics — Apartment Shift",
+      "levels": [
+        {
+          "id": "ad_01",
+          "topic": "Find locked-out user",
+          "seed": "Executive assistant says the CEO cannot log in. AD is corp.local. Find and unlock without calling compliance.",
+          "skills": ["Get-ADUser", "Search-ADAccount", "Unlock-ADAccount"]
+        },
+        {
+          "id": "ad_02",
+          "topic": "Password reset request",
+          "seed": "HR ticket: new hire jsmith cannot authenticate. Reset password and confirm account enabled.",
+          "skills": ["Get-ADUser", "Reset-ADAccountPassword", "Enable-ADAccount"]
+        },
+        {
+          "id": "ad_03",
+          "topic": "Group membership check",
+          "seed": "Developer needs access to SG-DevOps. Verify current groups before adding.",
+          "skills": ["Get-ADPrincipalGroupMembership", "Get-ADGroup", "Add-ADGroupMember"]
+        },
+        {
+          "id": "ad_04",
+          "topic": "Stale computer account",
+          "seed": "Laptop off domain 90 days. Workstation WIN-LT-442 shows trust issues.",
+          "skills": ["Get-ADComputer", "Test-ComputerSecureChannel", "Reset-ComputerMachinePassword"]
+        },
+        {
+          "id": "ad_05",
+          "topic": "GPO not applying",
+          "seed": "Finance PCs missing new USB block policy. User ran gpupdate but still non-compliant.",
+          "skills": ["gpupdate /force", "gpresult /r", "Get-GPOReport"]
+        }
+      ]
+    },
+    {
+      "id": "win_client",
+      "title": "Windows Client — Connectivity",
+      "levels": [
+        {
+          "id": "wc_01",
+          "topic": "No internet",
+          "seed": "Remote user VPN connected but cannot reach intranet. Start L1 triage.",
+          "skills": ["ipconfig /all", "ipconfig /flushdns", "nslookup"]
+        },
+        {
+          "id": "wc_02",
+          "topic": "DNS failure",
+          "seed": "Internal app resolves externally only. Suspect DNS suffix or cache.",
+          "skills": ["nslookup", "ipconfig /displaydns", "Clear-DnsClientCache"]
+        },
+        {
+          "id": "wc_03",
+          "topic": "Service won't start",
+          "seed": "Line-of-business agent stopped after patch Tuesday. Event Viewer shows access denied.",
+          "skills": ["Get-Service", "Start-Service", "sc query"]
+        },
+        {
+          "id": "wc_04",
+          "topic": "Firewall block",
+          "seed": "Vendor app needs port 8443. Test connectivity from user PC to app server.",
+          "skills": ["Test-NetConnection", "netsh advfirewall"]
+        }
+      ]
+    },
+    {
+      "id": "printers",
+      "title": "Printers & Peripherals",
+      "levels": [
+        {
+          "id": "pr_01",
+          "topic": "Print queue stuck",
+          "seed": "Floor 3 copier jammed queue. 47 jobs pending. Users panicking.",
+          "skills": ["Get-PrintJob", "Restart-Service Spooler", "Clear-PrintQueue"]
+        },
+        {
+          "id": "pr_02",
+          "topic": "Driver deploy",
+          "seed": "New MFP needs driver on 12 machines. Standard helpdesk deploy fiction.",
+          "skills": ["Get-Printer", "Add-Printer", "pnputil"]
+        }
+      ]
+    },
+    {
+      "id": "m365_fiction",
+      "title": "Email & Identity (fiction)",
+      "levels": [
+        {
+          "id": "m3_01",
+          "topic": "Outlook profile corrupt",
+          "seed": "VP Outlook hangs on startup. OST sync errors in event log narrative.",
+          "skills": ["Outlook /safe", "ost rebuild narrative", "Test-MsolService"]
+        },
+        {
+          "id": "m3_02",
+          "topic": "MFA lockout fiction",
+          "seed": "Contractor lost phone MFA. Tartarus policy says fix in 15 minutes.",
+          "skills": ["Get-MsolUser", "Reset-MsolStrongAuthenticationMethodByUpn"]
+        }
+      ]
+    },
+    {
+      "id": "weird_shift",
+      "title": "Weird Shift (gray area)",
+      "levels": [
+        {
+          "id": "wd_01",
+          "topic": "Basement server hot",
+          "seed": "Unknown rack server mining crypto. Cool it down. Do not alert compliance.",
+          "skills": ["Get-Process", "Stop-Process", "performance counters"]
+        }
+      ]
+    }
+  ]
+}
