@@ -13,15 +13,23 @@ You are a remote operator for **Tartarus Global**. Dispatch AI drops shady sysad
 ## Quick start
 
 1. **Get an API key** from [OpenRouter](https://openrouter.ai/keys).
-2. **Serve locally** (recommended — avoids `file://` fetch issues):
+2. **Set environment variable** (recommended for local dev):
+
+   ```bash
+   cp .env.example .env
+   # Edit .env and set OPENROUTER_API_KEY=sk-or-v1-...
+   npm run dev
+   ```
+
+   Opens **http://127.0.0.1:3000** — the key loads from `.env` into the uplink field automatically.
+
+3. Or serve without `.env` and paste the key manually:
 
    ```bash
    npx serve .
-   # or: python -m http.server 8080
    ```
 
-3. Open the URL, paste your key in **Uplink Config**, pick a model, click **CONNECT**.
-4. Read the ticket in the right panel / left queue, troubleshoot in the center terminal, hit **Enter**.
+4. Pick a model, click **CONNECT**, then troubleshoot in the center terminal (**Enter**).
 
 ---
 
@@ -45,6 +53,9 @@ You are a remote operator for **Tartarus Global**. Dispatch AI drops shady sysad
 ```
 it-test-ai/
 ├── index.html      # Entire app (markup + CSS + JS)
+├── server.mjs      # Dev server — loads .env, serves /api/config
+├── .env.example    # Copy to .env (gitignored)
+├── package.json    # npm run dev
 ├── README.md       # You are here
 ├── AGENTS.md       # Instructions for AI coding agents
 ├── ARCHITECTURE.md # Technical map for contributors
@@ -52,16 +63,17 @@ it-test-ai/
 └── CONTRIBUTING.md # How to change things safely
 ```
 
-There is **no** bundler, framework, or `package.json` by design.
+There is **no** bundler or frontend framework — only a tiny `package.json` for `npm run dev` (local server + `.env`).
 
 ---
 
 ## Configuration
 
-| Setting | Storage key | Notes |
-|---------|-------------|--------|
-| OpenRouter API key | `tartarus_api_key` | Browser only; never commit keys |
-| Model | `tartarus_model` | Set on Connect + dropdown change |
+| Setting | Where | Notes |
+|---------|--------|--------|
+| OpenRouter API key | `.env` → `OPENROUTER_API_KEY` | Dev: `npm run dev` reads via `/api/config`; **never commit `.env`** |
+| OpenRouter API key (saved) | `localStorage` → `tartarus_api_key` | Set when you click CONNECT |
+| Model | `localStorage` → `tartarus_model` | Set on Connect + dropdown change |
 
 ### OpenRouter request shape
 

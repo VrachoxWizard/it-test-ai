@@ -9,10 +9,12 @@ Thanks for extending **TARTARUS UPLINK**. This project is intentionally small â€
 ```bash
 git clone https://github.com/VrachoxWizard/it-test-ai.git
 cd it-test-ai
-npx serve .
+cp .env.example .env
+# Set OPENROUTER_API_KEY in .env
+npm run dev
 ```
 
-Open the printed URL. You need your own [OpenRouter](https://openrouter.ai) API key.
+Open **http://127.0.0.1:3000**. Or use `npx serve .` and paste your key manually.
 
 ---
 

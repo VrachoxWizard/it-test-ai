@@ -21,7 +21,7 @@ This file is for **AI agents** (Cursor, Copilot, Claude Code, etc.) working in t
 3. **Single source of truth** — default deliverable is one `index.html`. Do not split into multiple files without explicit user request.
 4. **`SYSTEM_PROMPT` is sacred** — the exact Dispatch AI system string in `index.html` must not be edited, shortened, or “improved” unless the user explicitly asks to change lore/behavior. You may reference it but not paraphrase it in code.
 5. **No real shell execution** — terminal is display + capture only; commands go to OpenRouter as text.
-6. **Never commit API keys** — keys live in `localStorage` only; no `.env` with secrets in repo.
+6. **Never commit API keys** — use `.env` (gitignored) with `OPENROUTER_API_KEY`; `npm run dev` serves `/api/config`. On CONNECT, key may also be saved to `localStorage`.
 7. **Minimize diff scope** — match existing patterns (`app` object, `els` map, `appendChat`, `callOpenRouter`).
 
 ---
@@ -33,7 +33,8 @@ This file is for **AI agents** (Cursor, Copilot, Claude Code, etc.) working in t
 | `index.html` | Yes — primary surface |
 | `README.md`, `AGENTS.md`, `*.md` docs | Yes — keep in sync with behavior |
 | `.cursor/rules/*.mdc` | Yes — project rules |
-| `package.json`, `src/` | No — unless user requests restructure |
+| `server.mjs`, `package.json`, `.env.example` | Yes — local dev only |
+| `src/` | No — unless user requests restructure |
 
 ---
 

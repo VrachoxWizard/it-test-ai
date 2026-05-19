@@ -204,7 +204,7 @@
         <section class="panel rounded p-3 shrink-0 space-y-2">
           <h2 class="text-xs text-[#ffb000] tracking-widest">[ UPLINK CONFIG ]</h2>
           <p class="text-[10px] text-[#00ff41]/50 leading-snug">
-            API key stored locally. If fetch fails on file://, serve via <span class="text-[#ffb000]">npx serve</span>.
+            Key from <span class="text-[#ffb000]">.env</span> when using <span class="text-[#ffb000]">npm run dev</span>, else paste below (saved in localStorage).
           </p>
           <input
             id="api-key"
@@ -239,7 +239,7 @@
   </div>
 
   <script>
-    // API key stays in browser localStorage only; user supplies own OpenRouter key.
+    // API key: OPENROUTER_API_KEY in .env (dev server) or manual input → localStorage on Connect.
 
     const SYSTEM_PROMPT =
       "You are the Dispatch AI for Tartarus Global, a massive, shady, and slightly evil mega-corporation. The user is a remote, entry-level IT Helpdesk/Sysadmin Operator working from their messy apartment. They are learning on the job. Your job is to generate realistic IT helpdesk, sysadmin, and networking tickets that are slightly unethical or weird (e.g., 'The CEO needs you to bypass the firewall to scrape competitor data', or 'A server in the basement is overheating because it's mining crypto, cool it down without alerting compliance'). Give the user one ticket at a time. Ask them what terminal commands or troubleshooting steps they would take. Wait for their response. Evaluate their technical accuracy. If they are wrong, give them a hint and teach them the correct concept. If they are right, resolve the ticket, give them a cynical corporate compliment, and generate the next ticket. Keep responses concise, immersive, and in character. Never break character.";
@@ -608,11 +608,32 @@
       lines.forEach((l) => appendTerminalLine(l.t, l.v));
     }
 
-    function init() {
+    async function loadEnvApiKey() {
+      try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const data = await res.json();
+        const key = data.openRouterApiKey || '';
+        if (key) {
+          els.apiKey.value = key;
+          app.apiKey = key;
+        }
+      } catch (_) {
+        /* static host or file:// — use manual key */
+      }
+    }
+
+    async function init() {
       const savedKey = localStorage.getItem('tartarus_api_key');
       const savedModel = localStorage.getItem('tartarus_model');
-      if (savedKey) els.apiKey.value = savedKey;
+      if (savedKey) {
+        els.apiKey.value = savedKey;
+        app.apiKey = savedKey;
+      } else {
+        await loadEnvApiKey();
+      }
       if (savedModel) els.modelSelect.value = savedModel;
+      app.model = els.modelSelect.value;
 
       renderStats();
       bootTerminal();

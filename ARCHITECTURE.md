@@ -125,6 +125,12 @@ OpenRouter expects:
 
 ---
 
+## API key sources (priority on load)
+
+1. `localStorage.tartarus_api_key` (if user connected before)
+2. `GET /api/config` → `{ openRouterApiKey }` from `server.mjs` reading `.env` `OPENROUTER_API_KEY`
+3. Manual paste in UI
+
 ## localStorage
 
 | Key | Set when |
