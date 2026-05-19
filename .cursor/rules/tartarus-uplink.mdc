@@ -1,0 +1,18 @@
+---
+description: TARTARUS UPLINK single-file cyberpunk helpdesk app conventions
+globs: index.html
+alwaysApply: true
+---
+
+# TARTARUS UPLINK
+
+Read `AGENTS.md` and `VIBECODING.md` before editing.
+
+- Single file `index.html` — HTML + embedded CSS + Vanilla JS only. No React/Vite/npm unless user requests.
+- Tailwind via CDN; fonts JetBrains Mono / Fira Code. Palette: `#050505`, `#00ff41`, `#ffb000`, `#ff003c`.
+- Do NOT modify `SYSTEM_PROMPT` unless user explicitly asks.
+- Terminal does not run real OS commands; input goes to OpenRouter via `callOpenRouter`.
+- OpenRouter headers: `Authorization`, `Content-Type`, `HTTP-Referer: http://localhost`, `X-Title: Tartarus Uplink`.
+- Never commit API keys; use `localStorage` keys `tartarus_api_key`, `tartarus_model`.
+- Keep immersion: bracket headers, CRT scanlines, cynical SYSTEM errors, `operator@tartarus:~$` prompt.
+- Minimize diff scope; reuse `app`, `els`, `appendChat`, `appendTerminalLine`, `sendToAI`.
