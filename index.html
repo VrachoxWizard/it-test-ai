@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project: TARTARUS UPLINK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #050505;
+      --green: #00ff41;
+      --amber: #ffb000;
+      --red: #ff003c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--green);
+      text-shadow: 0 0 8px currentColor;
+    }
+
+    .crt-screen::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      opacity: 0.4;
+    }
+
+    .crt-screen::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+      background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+    }
+
+    .panel {
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.05);
+      background: rgba(0, 10, 0, 0.4);
+    }
+
+    .scroll-panel::-webkit-scrollbar { width: 6px; height: 6px; }
+    .scroll-panel::-webkit-scrollbar-track { background: #0a0a0a; }
+    .scroll-panel::-webkit-scrollbar-thumb { background: rgba(0, 255, 65, 0.35); border-radius: 2px; }
+
+    #app-root.glitch-active {
+      animation: glitch 0.4s steps(2, end);
+    }
+
+    @keyframes glitch {
+      0% { transform: translate(0); filter: none; }
+      20% { transform: translate(-3px, 1px) skewX(-0.5deg); clip-path: inset(10% 0 85% 0); }
+      40% { transform: translate(3px, -1px) skewX(0.5deg); clip-path: inset(50% 0 30% 0); }
+      60% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+      80% { transform: translate(2px, -2px); clip-path: inset(80% 0 5% 0); }
+      100% { transform: translate(0); filter: none; clip-path: none; }
+    }
+
+    .stat-bar-fill { transition: width 0.6s ease; }
+
+    #terminal-input, #api-key, #model-select {
+      background: transparent;
+      outline: none;
+      caret-color: var(--green);
+    }
+
+    #terminal-input:focus, #api-key:focus {
+      box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.4);
+    }
+
+    .conn-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .conn-led.online {
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+    }
+
+    .conn-led.busy {
+      background: var(--amber);
+      box-shadow: 0 0 10px var(--amber);
+      animation: pulse-led 0.8s infinite;
+    }
+
+    @keyframes pulse-led {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .header-title {
+      letter-spacing: 0.15em;
+    }
+
+    .chat-msg { word-break: break-word; white-space: pre-wrap; }
+
+    .terminal-line { white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body class="crt-screen min-h-screen overflow-hidden">
+  <div id="app-root" class="flex flex-col h-screen max-h-screen">
+    <!-- Header -->
+    <header class="shrink-0 border-b border-[#00ff41]/20 px-4 py-2 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="header-title text-lg font-bold text-[#00ff41]">PROJECT: TARTARUS UPLINK</h1>
+        <span class="text-xs text-[#ffb000]/80 hidden sm:inline">// remote helpdesk node — apt 4B</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-[#00ff41]/60">
+        <span id="conn-status-label">OFFLINE</span>
+        <div id="conn-status" class="conn-led" title="Uplink status"></div>
+      </div>
+    </header>
+
+    <!-- Main grid -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 min-h-0 overflow-hidden">
+      <!-- LEFT: Apartment & Queue -->
+      <aside class="lg:col-span-3 flex flex-col gap-3 min-h-0">
+        <section class="panel rounded p-3 shrink-0">
+          <h2 class="text-xs text-[#ffb000] mb-3 tracking-widest">[ OPERATOR STATUS ]</h2>
+          <div class="space-y-3 text-sm">
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-[#00ff41]/80">Caffeine</span>
+                <span id="stat-caffeine-val" class="text-[#00ff41]">80%</span>
+              </div>
+              <div class="h-1.5 bg-[#0a0a0a] rounded overflow-hidden">
+                <div id="stat-caffeine-bar" class="stat-bar-fill h-full bg-[#00ff41]" style="width: 80%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-[#00ff41]/80">Sanity</span>
+                <span id="stat-sanity-val" class="text-[#ffb000]">45%</span>
+              </div>
+              <div class="h-1.5 bg-[#0a0a0a] rounded overflow-hidden">
+                <div id="stat-sanity-bar" class="stat-bar-fill h-full bg-[#ffb000]" style="width: 45%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-[#00ff41]/80">Uplink</span>
+                <span id="stat-uplink-val" class="text-[#00ff41]">Stable</span>
+              </div>
+              <div class="h-1.5 bg-[#0a0a0a] rounded overflow-hidden">
+                <div id="stat-uplink-bar" class="stat-bar-fill h-full bg-[#00ff41]" style="width: 92%"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel rounded p-3 flex-1 min-h-0 flex flex-col">
+          <h2 class="text-xs text-[#ffb000] mb-2 tracking-widest">[ TICKET QUEUE ]</h2>
+          <div class="flex items-center gap-2 mb-2">
+            <span id="queue-status" class="text-[10px] px-2 py-0.5 border border-[#ffb000]/50 text-[#ffb000]">IDLE</span>
+          </div>
+          <p id="queue-active-title" class="text-sm text-[#00ff41]/90 leading-relaxed flex-1 overflow-y-auto scroll-panel">
+            AWAITING DISPATCH...
+          </p>
+        </section>
+      </aside>
+
+      <!-- CENTER: Workbench terminal -->
+      <section class="lg:col-span-5 panel rounded flex flex-col min-h-0">
+        <h2 class="text-xs text-[#ffb000] px-3 pt-3 tracking-widest shrink-0">[ WORKBENCH // TERMINAL ]</h2>
+        <div id="terminal-output" class="flex-1 overflow-y-auto scroll-panel px-3 py-2 text-sm space-y-0.5 min-h-0"></div>
+        <form id="terminal-form" class="shrink-0 border-t border-[#00ff41]/20 px-3 py-2 flex items-center gap-1">
+          <span class="text-[#00ff41] shrink-0 text-sm">operator@tartarus:~$</span>
+          <input
+            id="terminal-input"
+            type="text"
+            class="flex-1 text-sm text-[#00ff41] min-w-0"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder=""
+            disabled
+          />
+        </form>
+      </section>
+
+      <!-- RIGHT: Uplink / AI Chat -->
+      <aside class="lg:col-span-4 flex flex-col gap-3 min-h-0">
+        <section class="panel rounded p-3 shrink-0 space-y-2">
+          <h2 class="text-xs text-[#ffb000] tracking-widest">[ UPLINK CONFIG ]</h2>
+          <p class="text-[10px] text-[#00ff41]/50 leading-snug">
+            API key stored locally. If fetch fails on file://, serve via <span class="text-[#ffb000]">npx serve</span>.
+          </p>
+          <input
+            id="api-key"
+            type="password"
+            placeholder="OpenRouter API Key"
+            class="w-full text-xs border border-[#00ff41]/30 rounded px-2 py-1.5 text-[#00ff41] placeholder-[#00ff41]/30"
+          />
+          <div class="flex gap-2">
+            <select id="model-select" class="flex-1 text-xs border border-[#00ff41]/30 rounded px-2 py-1.5 text-[#00ff41]">
+              <option value="meta-llama/llama-3-8b-instruct:free">llama-3-8b-instruct (free)</option>
+              <option value="openai/gpt-4o-mini">gpt-4o-mini</option>
+            </select>
+            <button
+              id="btn-connect"
+              type="button"
+              class="shrink-0 px-3 py-1.5 text-xs border border-[#00ff41] text-[#00ff41] hover:bg-[#00ff41]/10 transition-colors"
+            >
+              CONNECT
+            </button>
+          </div>
+        </section>
+
+        <section class="panel rounded flex flex-col flex-1 min-h-0">
+          <h2 class="text-xs text-[#ffb000] px-3 pt-3 tracking-widest shrink-0">[ TARTARUS DISPATCH AI ]</h2>
+          <div id="chat-log" class="flex-1 overflow-y-auto scroll-panel px-3 py-2 space-y-3 text-sm min-h-0"></div>
+          <div id="typing-indicator" class="hidden px-3 py-2 text-xs text-[#ffb000] animate-pulse border-t border-[#00ff41]/10">
+            ▶ DISPATCH AI TRANSMITTING...
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // API key stays in browser localStorage only; user supplies own OpenRouter key.
+
+    const SYSTEM_PROMPT =
+      "You are the Dispatch AI for Tartarus Global, a massive, shady, and slightly evil mega-corporation. The user is a remote, entry-level IT Helpdesk/Sysadmin Operator working from their messy apartment. They are learning on the job. Your job is to generate realistic IT helpdesk, sysadmin, and networking tickets that are slightly unethical or weird (e.g., 'The CEO needs you to bypass the firewall to scrape competitor data', or 'A server in the basement is overheating because it's mining crypto, cool it down without alerting compliance'). Give the user one ticket at a time. Ask them what terminal commands or troubleshooting steps they would take. Wait for their response. Evaluate their technical accuracy. If they are wrong, give them a hint and teach them the correct concept. If they are right, resolve the ticket, give them a cynical corporate compliment, and generate the next ticket. Keep responses concise, immersive, and in character. Never break character.";
+
+    const app = {
+      apiKey: '',
+      model: 'meta-llama/llama-3-8b-instruct:free',
+      connected: false,
+      busy: false,
+      messages: [],
+      ticketTitle: '',
+      stats: { caffeine: 80, sanity: 45, uplink: 92 },
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const els = {
+      appRoot: $('app-root'),
+      terminalOutput: $('terminal-output'),
+      terminalInput: $('terminal-input'),
+      terminalForm: $('terminal-form'),
+      apiKey: $('api-key'),
+      modelSelect: $('model-select'),
+      btnConnect: $('btn-connect'),
+      chatLog: $('chat-log'),
+      typingIndicator: $('typing-indicator'),
+      queueTitle: $('queue-active-title'),
+      queueStatus: $('queue-status'),
+      connStatus: $('conn-status'),
+      connStatusLabel: $('conn-status-label'),
+      statCaffeineVal: $('stat-caffeine-val'),
+      statCaffeineBar: $('stat-caffeine-bar'),
+      statSanityVal: $('stat-sanity-val'),
+      statSanityBar: $('stat-sanity-bar'),
+      statUplinkVal: $('stat-uplink-val'),
+      statUplinkBar: $('stat-uplink-bar'),
+    };
+
+    function setConnLed(state) {
+      els.connStatus.classList.remove('online', 'busy');
+      if (state === 'online') {
+        els.connStatus.classList.add('online');
+        els.connStatusLabel.textContent = 'ONLINE';
+        els.connStatusLabel.className = 'text-[#00ff41]';
+      } else if (state === 'busy') {
+        els.connStatus.classList.add('busy');
+        els.connStatusLabel.textContent = 'TRANSMIT';
+        els.connStatusLabel.className = 'text-[#ffb000]';
+      } else {
+        els.connStatusLabel.textContent = 'OFFLINE';
+        els.connStatusLabel.className = 'text-[#ff003c]/80';
+      }
+    }
+
+    function appendTerminalLine(text, variant = 'default') {
+      const line = document.createElement("div");
+      line.className = 'terminal-line text-sm';
+      const colors = {
+        default: 'text-[#00ff41]',
+        system: 'text-[#ffb000]',
+        error: 'text-[#ff003c]',
+        prompt: 'text-[#00ff41]',
+      };
+      line.classList.add(colors[variant] || colors.default);
+      line.textContent = text;
+      els.terminalOutput.appendChild(line);
+      els.terminalOutput.scrollTop = els.terminalOutput.scrollHeight;
+    }
+
+    function appendChat(role, text) {
+      const wrap = document.createElement("div");
+      wrap.className = 'chat-msg';
+
+      const labels = {
+        dispatch: { tag: 'DISPATCH', color: 'text-[#00ff41]' },
+        operator: { tag: 'OPERATOR', color: 'text-[#ffb000]' },
+        system: { tag: 'SYSTEM', color: 'text-[#ff003c]' },
+      };
+      const meta = labels[role] || labels.system;
+
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      wrap.innerHTML =
+        '<span class="text-[10px] text-[#00ff41]/40">' +
+        time +
+        '</span> ' +
+        '<span class="text-[10px] ' +
+        meta.color +
+        ' font-bold">[' +
+        meta.tag +
+        ']</span><br/>' +
+        '<span class="' +
+        meta.color +
+        '/90">' +
+        escapeHtml(text) +
+        '</span>';
+
+      els.chatLog.appendChild(wrap);
+      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function setTyping(show) {
+      els.typingIndicator.classList.toggle('hidden', !show);
+      if (show) {
+        els.chatLog.scrollTop = els.chatLog.scrollHeight;
+      }
+    }
+
+    function setBusy(busy) {
+      app.busy = busy;
+      els.btnConnect.disabled = busy;
+      els.terminalInput.disabled = busy || !app.connected;
+      els.apiKey.disabled = busy;
+      els.modelSelect.disabled = busy;
+      setConnLed(busy && app.connected ? 'busy' : app.connected ? 'online' : 'offline');
+    }
+
+    function extractTicketTitle(text) {
+      if (!text || typeof text !== 'string') return '';
+
+      const patterns = [
+        /TICKET(?:\s*#?\d*)?:\s*(.+)/i,
+        /^##\s+(.+)$/m,
+        /\*\*\s*(.+?)\s*\*\*/,
+        /Subject:\s*(.+)/i,
+        /Ticket:\s*(.+)/i,
+        /Issue:\s*(.+)/i,
+        /(?:^|\n)(?:Ticket\s*#?\d*[:\-]\s*)(.+)/i,
+      ];
+
+      for (const re of patterns) {
+        const m = text.match(re);
+        if (m && m[1]) {
+          const t = m[1].trim().replace(/\*\*/g, '').slice(0, 120);
+          if (t.length > 2) return t;
+        }
+      }
+
+      const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        const cleaned = line.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+        if (cleaned.length > 3 && cleaned.length < 80 && !/^(hi|hello|hey|ok|yes|no)\b/i.test(cleaned)) {
+          return cleaned;
+        }
+      }
+      return '';
+    }
+
+    function updateQueue(title, active) {
+      const prev = app.ticketTitle;
+      if (title) {
+        app.ticketTitle = title;
+        els.queueTitle.textContent = title;
+        els.queueStatus.textContent = 'ACTIVE';
+        els.queueStatus.className =
+          'text-[10px] px-2 py-0.5 border border-[#00ff41]/50 text-[#00ff41]';
+        if (title !== prev && prev !== '') {
+          triggerGlitch();
+        } else if (title !== prev && prev === '') {
+          triggerGlitch();
+        }
+      } else if (!active) {
+        els.queueStatus.textContent = 'IDLE';
+        els.queueStatus.className =
+          'text-[10px] px-2 py-0.5 border border-[#ffb000]/50 text-[#ffb000]';
+      }
+    }
+
+    function triggerGlitch() {
+      els.appRoot.classList.remove('glitch-active');
+      void els.appRoot.offsetWidth;
+      els.appRoot.classList.add('glitch-active');
+      setTimeout(() => els.appRoot.classList.remove('glitch-active'), 400);
+    }
+
+    function driftStats() {
+      app.stats.caffeine = clamp(app.stats.caffeine + rand(-3, 5), 15, 99);
+      app.stats.sanity = clamp(app.stats.sanity + rand(-4, 2), 5, 95);
+      app.stats.uplink = clamp(app.stats.uplink + rand(-2, 3), 70, 100);
+      renderStats();
+    }
+
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function clamp(n, lo, hi) {
+      return Math.max(lo, Math.min(hi, n));
+    }
+
+    function renderStats() {
+      els.statCaffeineVal.textContent = app.stats.caffeine + '%';
+      els.statCaffeineBar.style.width = app.stats.caffeine + '%';
+      els.statSanityVal.textContent = app.stats.sanity + '%';
+      els.statSanityBar.style.width = app.stats.sanity + '%';
+      const uplinkLabel =
+        app.stats.uplink > 85 ? 'Stable' : app.stats.uplink > 60 ? 'Degraded' : 'Critical';
+      els.statUplinkVal.textContent = uplinkLabel;
+      els.statUplinkVal.className =
+        app.stats.uplink > 85
+          ? 'text-[#00ff41]'
+          : app.stats.uplink > 60
+            ? 'text-[#ffb000]'
+            : 'text-[#ff003c]';
+      els.statUplinkBar.style.width = app.stats.uplink + '%';
+      els.statUplinkBar.className =
+        'stat-bar-fill h-full ' +
+        (app.stats.uplink > 85
+          ? 'bg-[#00ff41]'
+          : app.stats.uplink > 60
+            ? 'bg-[#ffb000]'
+            : 'bg-[#ff003c]');
+    }
+
+    async function callOpenRouter(userContent) {
+      const payload = {
+        model: app.model,
+        messages: [...app.messages, { role: 'user', content: userContent }],
+      };
+
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + app.apiKey,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost',
+          'X-Title': 'Tartarus Uplink',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Invalid response from uplink.');
+      }
+
+      if (!res.ok) {
+        const msg =
+          (data && data.error && (data.error.message || data.error)) ||
+          'HTTP ' + res.status;
+        const err = new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+        err.status = res.status;
+        throw err;
+      }
+
+      const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!content) throw new Error('Empty transmission from Dispatch AI.');
+
+      app.messages.push({ role: 'user', content: userContent });
+      app.messages.push({ role: 'assistant', content: content });
+
+      return content;
+    }
+
+    function mapError(err) {
+      const s = err.status;
+      if (s === 401) return 'AUTH FAILED — Invalid OpenRouter API key.';
+      if (s === 402) return 'INSUFFICIENT CREDITS — Top up OpenRouter account.';
+      if (s === 429) return 'RATE LIMITED — Uplink congested. Wait and retry.';
+      if (s === 403) return 'FORBIDDEN — Key lacks model access.';
+      if (err.message && err.message.includes('Failed to fetch')) {
+        return 'UPLINK SEVERED — Network/CORS blocked. Serve page via localhost (npx serve).';
+      }
+      return 'UPLINK ERROR — ' + (err.message || 'Unknown failure');
+    }
+
+    async function sendToAI(userContent, source) {
+      if (app.busy) return;
+
+      if (source === 'terminal') {
+        appendChat('operator', userContent);
+      }
+
+      setBusy(true);
+      setTyping(true);
+
+      try {
+        const reply = await callOpenRouter(userContent);
+        appendChat('dispatch', reply);
+
+        const title = extractTicketTitle(reply);
+        if (title) {
+          updateQueue(title, true);
+        }
+
+        if (/resolved|closed|next ticket|new ticket|ticket #/i.test(reply)) {
+          driftStats();
+        }
+      } catch (err) {
+        appendChat('system', mapError(err));
+        appendTerminalLine('[SYSTEM] ' + mapError(err), 'error');
+      } finally {
+        setTyping(false);
+        setBusy(false);
+        els.terminalInput.focus();
+      }
+    }
+
+    async function handleConnect() {
+      const key = els.apiKey.value.trim();
+      if (!key) {
+        appendChat('system', 'API KEY REQUIRED — Insert OpenRouter key to establish uplink.');
+        return;
+      }
+
+      app.apiKey = key;
+      app.model = els.modelSelect.value;
+      localStorage.setItem('tartarus_api_key', key);
+      localStorage.setItem('tartarus_model', app.model);
+
+      app.connected = false;
+      app.messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+      app.ticketTitle = '';
+      els.queueTitle.textContent = 'AWAITING DISPATCH...';
+      updateQueue('', false);
+
+      setBusy(true);
+      setTyping(true);
+      appendChat('system', 'Establishing encrypted uplink to Tartarus Global...');
+      appendTerminalLine('[SYSTEM] Handshake initiated...', 'system');
+
+      try {
+        const reply = await callOpenRouter("Uplink established. I'm ready for my first ticket.");
+        app.connected = true;
+        els.terminalInput.disabled = false;
+
+        appendChat('dispatch', reply);
+        appendTerminalLine('[SYSTEM] Uplink established. Dispatch channel open.', 'system');
+        appendTerminalLine('[DISPATCH] Awaiting your troubleshooting input below.', 'system');
+
+        const title = extractTicketTitle(reply);
+        if (title) updateQueue(title, true);
+        else updateQueue('INCOMING TICKET — SEE DISPATCH', true);
+
+        driftStats();
+        setConnLed('online');
+      } catch (err) {
+        app.messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+        appendChat('system', mapError(err));
+        appendTerminalLine('[SYSTEM] ' + mapError(err), 'error');
+        setConnLed('offline');
+      } finally {
+        setTyping(false);
+        setBusy(false);
+        if (app.connected) els.terminalInput.focus();
+      }
+    }
+
+    function bootTerminal() {
+      const lines = [
+        { t: 'Tartarus Uplink v2.4.1 — boot sequence', v: 'system' },
+        { t: '[ OK ] Loading kernel modules...', v: 'default' },
+        { t: '[ OK ] tartarus-uplink.service — active (running)', v: 'default' },
+        { t: '[WARN] Compliance daemon — ignored (operator override)', v: 'system' },
+        { t: '[ OK ] VPN tunnel — encrypted', v: 'default' },
+        { t: 'Type commands when uplink is online. Connect via right panel.', v: 'system' },
+        { t: '────────────────────────────────────────', v: 'default' },
+      ];
+      lines.forEach((l) => appendTerminalLine(l.t, l.v));
+    }
+
+    function init() {
+      const savedKey = localStorage.getItem('tartarus_api_key');
+      const savedModel = localStorage.getItem('tartarus_model');
+      if (savedKey) els.apiKey.value = savedKey;
+      if (savedModel) els.modelSelect.value = savedModel;
+
+      renderStats();
+      bootTerminal();
+      setConnLed('offline');
+
+      els.btnConnect.addEventListener('click', handleConnect);
+
+      els.terminalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const cmd = els.terminalInput.value.trim();
+        if (!cmd) return;
+
+        els.terminalInput.value = '';
+
+        if (!app.connected) {
+          appendTerminalLine('operator@tartarus:~$ ' + cmd, 'prompt');
+          appendTerminalLine('[SYSTEM] Uplink offline. Connect in right panel.', 'error');
+          return;
+        }
+
+        appendTerminalLine('operator@tartarus:~$ ' + cmd, 'prompt');
+        sendToAI(cmd, 'terminal');
+      });
+
+      els.modelSelect.addEventListener('change', () => {
+        app.model = els.modelSelect.value;
+        localStorage.setItem('tartarus_model', app.model);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
